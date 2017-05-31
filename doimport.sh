@@ -5,7 +5,7 @@
 
 /Applications/Neo4j\ Community\ Edition\ 3.2.0.app/Contents/Resources/jre.bundle/Contents/Home/jre/bin/java \
 -cp /Applications/Neo4j\ Community\ Edition\ 3.2.0.app/Contents/Resources/app/bin/neo4j-desktop-3.2.0.jar org.neo4j.tooling.ImportTool \
---into ../neo/data/graph.db \
+--into ./neo/data/graph.db \
 --id-type string \
 --nodes ./csv-files/granular-marking.csv \
 --nodes ./csv-files/external-reference.csv \

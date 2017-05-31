@@ -93,7 +93,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       clean(x.name) + "," + x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
       external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
       granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + x.`type`
+    val endPart = "SDO" + ";" + toLabel(x.`type`)
     // write the external_references
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
@@ -188,7 +188,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
       external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
       granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + x.`type`
+    val endPart = "SDO" + ";" + toLabel(x.`type`)
     // write the external_references
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
@@ -217,7 +217,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
       external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
       granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + x.`type`
+    val endPart = "SDO" + ";" + toLabel(x.`type`)
     // write the external_references
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
@@ -252,7 +252,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
 
     if (x.isInstanceOf[Relationship]) {
       val y = x.asInstanceOf[Relationship]
-      val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + y.relationship_type + "," +
+      val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + toLabel(y.relationship_type) + "," +
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Relationship.`type`, line)
     }
@@ -276,7 +276,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   // write the kill_chain_phases
   def writeKillPhases(idString: String, kill_chain_phases: Option[List[KillChainPhase]], kill_chain_phases_ids: String) = {
     val killphases = for (s <- kill_chain_phases.getOrElse(List.empty))
-      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + "SRO" + ";" + s.`type`
+      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + "SRO" + ";" + toLabel(s.`type`)
     if (killphases.nonEmpty) {
       val kp = (kill_chain_phases_ids.split(";") zip killphases).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(KillChainPhase.`type`, kp.mkString("\n"))
@@ -290,7 +290,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   def writeExternRefs(idString: String, external_references: Option[List[ExternalReference]], external_references_ids: String) = {
     val externRefs = for (s <- external_references.getOrElse(List.empty))
       yield clean(s.source_name) + "," + clean(s.description.getOrElse("")) + "," +
-        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + "SRO" + ";" + s.`type`
+        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + "SRO" + ";" +  toLabel(s.`type`)
     if (externRefs.nonEmpty) {
       val kp = (external_references_ids.split(";") zip externRefs).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(ExternalReference.`type`, kp.mkString("\n"))
@@ -303,7 +303,8 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   // write the granular_markings
   def writeGranulars(idString: String, granular_markings: Option[List[GranularMarking]], granular_markings_ids: String) = {
     val granulars = for (s <- granular_markings.getOrElse(List.empty))
-      yield toStringArray(Option(s.selectors)) + "," + clean(s.marking_ref.getOrElse("")) + "," + clean(s.lang.getOrElse("")) + "," + "SRO" + ";" + s.`type`
+      yield toStringArray(Option(s.selectors)) + "," + clean(s.marking_ref.getOrElse("")) + "," +
+        clean(s.lang.getOrElse("")) + "," + "SRO" + ";" +  toLabel(s.`type`)
     if (granulars.nonEmpty) {
       val kp = (granular_markings_ids.split(";") zip granulars).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(GranularMarking.`type`, kp.mkString("\n"))
@@ -346,5 +347,9 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     val t = for (s <- dataList.getOrElse(List.empty)) yield s.toString() + ";"
     if (t.nonEmpty) t.mkString.reverse.substring(1).reverse else ""
   }
+
+  // the Neo4j labels and relationship names cannot deal with "-", so replace them by "_"
+  private def toLabel(s: String) = s.replace(",", "").replace("-", "_").replace(";", "").replace("\"", "").replace("\\", "").replace("\n", "").replace("\r", "")
+
 
 }
