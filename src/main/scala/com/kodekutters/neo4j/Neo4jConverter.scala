@@ -1,7 +1,9 @@
 package com.kodekutters.neo4j
 
-import com.kodekutters.stix._
+import java.io.File
+import java.util.UUID
 
+import com.kodekutters.stix._
 import com.kodekutters.stix.Bundle
 import io.circe.generic.auto._
 import io.circe.parser.decode
@@ -9,6 +11,7 @@ import io.circe.parser.decode
 import scala.io.Source
 import scala.language.implicitConversions
 import scala.language.postfixOps
+import com.kodekutters.neo4j.Neo4jZipReader._
 
 
 /**
@@ -29,11 +32,11 @@ object Neo4jConverter {
   */
 class Neo4jConverter private(inFile: String, outDir: String) {
 
-  // create writer for writing the results
-  val neoWriter = new Neo4jWriter(outDir)
+  // a writer for writing the results, either plain or zip
+  var neoWriter: NeoWriter = _
 
-  // the incremental index for ids
-  private val idNdx = Stream.from(1).iterator
+  // for newly created relationships ids
+  private def newId = UUID.randomUUID().toString
 
   /**
     * read a bundle of Stix objects from the input file and
@@ -41,6 +44,8 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     * write the results to csv files in the output directory
     */
   def convertFromBundleFile(): Unit = {
+    // the file writer
+    neoWriter = new Neo4jFileWriter(outDir)
     // create all the required csv files
     neoWriter.init()
     // write the headers into them
@@ -55,8 +60,6 @@ class Neo4jConverter private(inFile: String, outDir: String) {
           obj match {
             case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
             case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
-            case stix if stix.isInstanceOf[SDO2] => convertSDO2(stix.asInstanceOf[SDO2])
-            case stix if stix.isInstanceOf[SDO3] => convertSDO3(stix.asInstanceOf[SDO3])
             case stix => // do nothing for now
           }
         }
@@ -75,12 +78,36 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   }
 
   /**
-    * read Stix objects one by one from the input zip file and
+    * read Stix bundles from the input zip file and
     * convert them to neo4j csv format then
-    * write the results to an output zip file in the output directory
+    * write the results to zip files in the output directory
     */
   def convertFromZipFile(): Unit = {
-    // todo
+    // the zip file writer
+    neoWriter = new Neo4jZipWriter(outDir)
+    // create all the required csv files
+    neoWriter.init()
+    // write the headers into them
+    neoWriter.writeHeaders()
+    // get the zip file
+    import scala.collection.JavaConverters._
+    val rootZip = new java.util.zip.ZipFile(new File(inFile))
+    // for each entry file
+    rootZip.entries.asScala.filter(_.getName.toLowerCase.endsWith(".json")).foreach(f => {
+      loadBundle(rootZip.getInputStream(f)) match {
+        case Some(bundle) =>
+          for (obj <- bundle.objects) {
+            obj match {
+              case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
+              case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
+              case stix => // do nothing for now
+            }
+          }
+        case None => println("-----> ERROR invalid bundle JSON in zip file: \n")
+      }
+    })
+    // all done, close all files
+    neoWriter.closeAll
   }
 
   def convertSDO(x: SDO) = {
@@ -90,10 +117,10 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     val external_references_ids = toIdArray(x.external_references)
     val object_marking_refs_arr = toStringIds(x.object_marking_refs)
     val commonPart = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
-      clean(x.name) + "," + x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
+      x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
       external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
       granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + toLabel(x.`type`)
+    val endPart = "SDO" + ";" + asCleanLabel(x.`type`)
     // write the external_references
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
@@ -104,31 +131,31 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case AttackPattern.`type` =>
         val y = x.asInstanceOf[AttackPattern]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
         neoWriter.writeToFile(AttackPattern.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Identity.`type` =>
         val y = x.asInstanceOf[Identity]
-        val line = commonPart + "," + clean(y.identity_class) + "," + toStringArray(y.sectors) + "," +
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.identity_class) + "," + toStringArray(y.sectors) + "," +
           clean(y.contact_information.getOrElse("")) + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Identity.`type`, line)
 
       case Campaign.`type` =>
         val y = x.asInstanceOf[Campaign]
-        val line = commonPart + "," + clean(y.objective.getOrElse("")) + "," + toStringArray(y.aliases) + "," +
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.objective.getOrElse("")) + "," + toStringArray(y.aliases) + "," +
           clean(y.first_seen.getOrElse("").toString) + "," + clean(y.last_seen.getOrElse("").toString) + "," +
           clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Campaign.`type`, line)
 
       case CourseOfAction.`type` =>
         val y = x.asInstanceOf[CourseOfAction]
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(CourseOfAction.`type`, line)
 
       case IntrusionSet.`type` =>
         val y = x.asInstanceOf[IntrusionSet]
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
           toStringArray(y.aliases) + "," + y.first_seen.getOrElse("").toString + "," +
           y.last_seen.getOrElse("").toString + "," + toStringArray(y.goals) + "," +
           clean(y.resource_level.getOrElse("")) + "," +
@@ -139,20 +166,20 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case Malware.`type` =>
         val y = x.asInstanceOf[Malware]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
         neoWriter.writeToFile(Malware.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Report.`type` =>
         val y = x.asInstanceOf[Report]
         val object_refs_ids = toIdArray(y.object_refs)
-        val line = commonPart + "," + y.published + "," + object_refs_ids + "," + clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," +y.published + "," + object_refs_ids + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Report.`type`, line)
-        writeObjRefs(y.id.toString(), y.object_refs, object_refs_ids, Neo4jWriter.objectRefs)
+        writeObjRefs(y.id.toString(), y.object_refs, object_refs_ids, NeoWriter.objectRefs)
 
       case ThreatActor.`type` =>
         val y = x.asInstanceOf[ThreatActor]
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
           toStringArray(y.aliases) + "," + toStringArray(y.roles) + "," + toStringArray(y.goals) + "," +
           clean(y.sophistication.getOrElse("")) + "," + clean(y.resource_level.getOrElse("")) + "," +
           clean(y.primary_motivation.getOrElse("")) + "," + toStringArray(y.secondary_motivations) + "," +
@@ -162,68 +189,25 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case Tool.`type` =>
         val y = x.asInstanceOf[Tool]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
           kill_chain_phases_ids + "," + clean(y.tool_version.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Tool.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Vulnerability.`type` =>
         val y = x.asInstanceOf[Vulnerability]
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Vulnerability.`type`, line)
 
-      case MarkingDefinition.`type` => // todo
-
-      case LanguageContent.`type` => // todo
-    }
-  }
-
-  def convertSDO3(x: SDO3) = {
-    // common elements
-    val labelsString = toStringArray(x.labels)
-    val granular_markings_ids = toIdArray(x.granular_markings)
-    val external_references_ids = toIdArray(x.external_references)
-    val object_marking_refs_arr = toStringIds(x.object_marking_refs)
-    val commonPart = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
-      x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
-      external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
-      granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + toLabel(x.`type`)
-    // write the external_references
-    writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
-    // write the granular_markings
-    writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
-
-    x.`type` match {
       case Indicator.`type` =>
         val y = x.asInstanceOf[Indicator]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name.getOrElse("")) + "," + clean(y.description.getOrElse("")) + "," +
           clean(y.pattern) + "," + y.valid_from.toString() + "," +
           clean(y.valid_until.getOrElse("").toString) + "," + kill_chain_phases_ids + "," + endPart
         neoWriter.writeToFile(Indicator.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
-    }
-  }
 
-  // todo
-  def convertSDO2(x: SDO2) = {
-    // common elements
-    val labelsString = toStringArray(x.labels)
-    val granular_markings_ids = toIdArray(x.granular_markings)
-    val external_references_ids = toIdArray(x.external_references)
-    val object_marking_refs_arr = toStringIds(x.object_marking_refs)
-    val commonPart = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
-      x.revoked.getOrElse("") + "," + labelsString + "," + x.confidence.getOrElse("") + "," +
-      external_references_ids + "," + clean(x.lang.getOrElse("")) + "," + object_marking_refs_arr + "," +
-      granular_markings_ids + "," + x.created_by_ref.getOrElse("")
-    val endPart = "SDO" + ";" + toLabel(x.`type`)
-    // write the external_references
-    writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
-    // write the granular_markings
-    writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
-
-    x.`type` match {
       // todo  objects: Map[String, Observable],
       case ObservedData.`type` =>
         val y = x.asInstanceOf[ObservedData]
@@ -231,6 +215,10 @@ class Neo4jConverter private(inFile: String, outDir: String) {
           y.first_observed.toString() + "," + y.last_observed.toString() + "," +
           y.number_observed + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(ObservedData.`type`, line)
+
+      case MarkingDefinition.`type` => // todo
+
+      case LanguageContent.`type` => // todo
     }
   }
 
@@ -252,7 +240,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
 
     if (x.isInstanceOf[Relationship]) {
       val y = x.asInstanceOf[Relationship]
-      val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + toLabel(y.relationship_type) + "," +
+      val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + asCleanLabel(y.relationship_type) + "," +
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Relationship.`type`, line)
     }
@@ -266,8 +254,8 @@ class Neo4jConverter private(inFile: String, outDir: String) {
         observed_data_ids + "," + where_sighted_refs_ids + "," +
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Sighting.`type`, line)
-      writeObjRefs(y.id.toString(), y.observed_data_refs, observed_data_ids, Neo4jWriter.observedDataRefs)
-      writeObjRefs(y.id.toString(), y.where_sighted_refs, where_sighted_refs_ids, Neo4jWriter.whereSightedRefs)
+      writeObjRefs(y.id.toString(), y.observed_data_refs, observed_data_ids, NeoWriter.observedDataRefs)
+      writeObjRefs(y.id.toString(), y.where_sighted_refs, where_sighted_refs_ids, NeoWriter.whereSightedRefs)
     }
   }
 
@@ -276,7 +264,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   // write the kill_chain_phases
   def writeKillPhases(idString: String, kill_chain_phases: Option[List[KillChainPhase]], kill_chain_phases_ids: String) = {
     val killphases = for (s <- kill_chain_phases.getOrElse(List.empty))
-      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + "SRO" + ";" + toLabel(s.`type`)
+      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
     if (killphases.nonEmpty) {
       val kp = (kill_chain_phases_ids.split(";") zip killphases).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(KillChainPhase.`type`, kp.mkString("\n"))
@@ -290,7 +278,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   def writeExternRefs(idString: String, external_references: Option[List[ExternalReference]], external_references_ids: String) = {
     val externRefs = for (s <- external_references.getOrElse(List.empty))
       yield clean(s.source_name) + "," + clean(s.description.getOrElse("")) + "," +
-        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + "SRO" + ";" +  toLabel(s.`type`)
+        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
     if (externRefs.nonEmpty) {
       val kp = (external_references_ids.split(";") zip externRefs).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(ExternalReference.`type`, kp.mkString("\n"))
@@ -304,7 +292,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   def writeGranulars(idString: String, granular_markings: Option[List[GranularMarking]], granular_markings_ids: String) = {
     val granulars = for (s <- granular_markings.getOrElse(List.empty))
       yield toStringArray(Option(s.selectors)) + "," + clean(s.marking_ref.getOrElse("")) + "," +
-        clean(s.lang.getOrElse("")) + "," + "SRO" + ";" +  toLabel(s.`type`)
+        clean(s.lang.getOrElse("")) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
     if (granulars.nonEmpty) {
       val kp = (granular_markings_ids.split(";") zip granulars).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(GranularMarking.`type`, kp.mkString("\n"))
@@ -332,7 +320,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
 
   // make an array of id values from the input list
   private def toIdArray(dataList: Option[List[Any]]) = {
-    val t = for (s <- dataList.getOrElse(List.empty)) yield idNdx.next().toString + ";"
+    val t = for (s <- dataList.getOrElse(List.empty)) yield newId + ";"
     if (t.nonEmpty) t.mkString.reverse.substring(1).reverse else ""
   }
 
@@ -348,8 +336,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     if (t.nonEmpty) t.mkString.reverse.substring(1).reverse else ""
   }
 
-  // the Neo4j labels and relationship names cannot deal with "-", so replace them by "_"
-  private def toLabel(s: String) = s.replace(",", "").replace("-", "_").replace(";", "").replace("\"", "").replace("\\", "").replace("\n", "").replace("\r", "")
-
+  // the Neo4j :LABEL and :TYPE cannot deal with "-", so clean and replace with "_"
+  private def asCleanLabel(s: String) = clean(s).replace("-", "_")
 
 }

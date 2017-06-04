@@ -12,35 +12,36 @@ object Neo4jHeaders {
   val nodeHeaders = mutable.Map[String, String]()
   val relHeaders = mutable.Map[String, String]()
 
-  val commonRelHeader = "id:string,created,modified,revoked:boolean,labels:string[],confidence:int,external_references:string[],lang,object_marking_refs:string[],granular_markings:string[],created_by_ref"
-  val commonNodeHeader = "id:ID(StixObj),type,created,modified,name,revoked:boolean,labels:string[],confidence:int,external_references:string[],lang,object_marking_refs:string[],granular_markings:string[],created_by_ref,"
+  val commonH = "created,modified,revoked:boolean,labels:string[],confidence:int,external_references:string[],lang,object_marking_refs:string[],granular_markings:string[],created_by_ref,"
+  val commonRelHeader = "id:string," + commonH
+  val commonNodeHeader = "id:ID(StixObj),type," + commonH
   val endHeader = ",:LABEL"
 
   //---------------------------------------------------------------------
   //----------------nodes------------------------------------------------
   //---------------------------------------------------------------------
 
-  val attackPatternHeader = commonNodeHeader + "description,kill_chain_phases:string[]" + endHeader
+  val attackPatternHeader = commonNodeHeader + "name,description,kill_chain_phases:string[]" + endHeader
 
-  val identityHeader = commonNodeHeader + "identity_class,sectors:string[],contact_information,description" + endHeader
+  val identityHeader = commonNodeHeader + "name,identity_class,sectors:string[],contact_information,description" + endHeader
 
-  val campaignHeader = commonNodeHeader + "objective,aliases:string[],first_seen,last_seen,description" + endHeader
+  val campaignHeader = commonNodeHeader + "name,objective,aliases:string[],first_seen,last_seen,description" + endHeader
 
-  val courseOfActionHeader = commonNodeHeader + "description" + endHeader
+  val courseOfActionHeader = commonNodeHeader + "name,description" + endHeader
 
-  val indicatorHeader = commonNodeHeader + "description,pattern,valid_from,valid_until,kill_chain_phases:string[]" + endHeader
+  val indicatorHeader = commonNodeHeader + "name,description,pattern,valid_from,valid_until,kill_chain_phases:string[]" + endHeader
 
-  val intrusionSetHeader = commonNodeHeader + "description,aliases:string[],first_seen,last_seen,goals:string[],resource_level,primary_motivation,secondary_motivations:string[]" + endHeader
+  val intrusionSetHeader = commonNodeHeader + "name,description,aliases:string[],first_seen,last_seen,goals:string[],resource_level,primary_motivation,secondary_motivations:string[]" + endHeader
 
-  val reportHeader = commonNodeHeader + "published,object_refs:string[],description" + endHeader
+  val reportHeader = commonNodeHeader + "name,published,object_refs:string[],description" + endHeader
 
-  val threatActorHeader = commonNodeHeader + "description,aliases:string[],roles:string[],goals:string[],sophistication,resource_level,primary_motivation,secondary_motivations:string[],personal_motivations:string[]" + endHeader
+  val threatActorHeader = commonNodeHeader + "name,description,aliases:string[],roles:string[],goals:string[],sophistication,resource_level,primary_motivation,secondary_motivations:string[],personal_motivations:string[]" + endHeader
 
-  val toolHeader = commonNodeHeader + "description,kill_chain_phases:string[],tool_version" + endHeader
+  val toolHeader = commonNodeHeader + "name,description,kill_chain_phases:string[],tool_version" + endHeader
 
-  val malwareHeader = commonNodeHeader + "description,kill_chain_phases:string[]" + endHeader
+  val malwareHeader = commonNodeHeader + "name,description,kill_chain_phases:string[]" + endHeader
 
-  val vulnerabilityHeader = commonNodeHeader + "description" + endHeader
+  val vulnerabilityHeader = commonNodeHeader + "name,description" + endHeader
 
   val killChainPhaseHeader = "kill_chain_phase_id:ID(kill_chain_phase_id),kill_chain_name,phase_name" + endHeader
 
@@ -66,8 +67,8 @@ object Neo4jHeaders {
     KillChainPhase.`type` -> killChainPhaseHeader,
     ExternalReference.`type` -> externalReferenceHeader,
     GranularMarking.`type` -> granularMarkingHeader,
-    Neo4jWriter.whereSightedRefs -> whereSightedHeader,
-    Neo4jWriter.objectRefs -> objRefsHeader,
+    NeoWriter.whereSightedRefs -> whereSightedHeader,
+    NeoWriter.objectRefs -> objRefsHeader,
     Identity.`type` -> identityHeader,
     Campaign.`type` -> campaignHeader,
     CourseOfAction.`type` -> courseOfActionHeader,
@@ -81,7 +82,7 @@ object Neo4jHeaders {
     Report.`type` -> reportHeader,
     LanguageContent.`type` -> langContent,
     MarkingDefinition.`type` -> markingDef,
-    Neo4jWriter.observedDataRefs -> obDataRefDef
+    NeoWriter.observedDataRefs -> obDataRefDef
   )
 
   //---------------------------------------------------------------------
@@ -99,9 +100,9 @@ object Neo4jHeaders {
   relHeaders ++= Map(
     KillChainPhase.`type` -> killChainPhaseRelHeader,
     ExternalReference.`type` -> externalReferenceRelHeader,
-    Neo4jWriter.observedDataRefs -> objectRefRelHeader,
-    Neo4jWriter.objectRefs -> objectRefRelHeader,
-    Neo4jWriter.whereSightedRefs -> whereSightedRelHeader,
+    NeoWriter.observedDataRefs -> objectRefRelHeader,
+    NeoWriter.objectRefs -> objectRefRelHeader,
+    NeoWriter.whereSightedRefs -> whereSightedRelHeader,
     GranularMarking.`type` -> granularMarkingRelHeader,
     Relationship.`type` -> relationshipsHeader,
     Sighting.`type` -> sightingsHeader

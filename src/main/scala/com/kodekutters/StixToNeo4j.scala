@@ -34,7 +34,7 @@ object StixToNeo4j {
       val outDir: String = if (args.length == 3) args(2) else ""
       args(0) match {
         case "--csv" => Neo4jConverter(args(1), outDir).convertFromBundleFile()
-        case "--zip" => // Neo4jConverter(args(1), outDir).convertFromZipFile()
+        case "--zip" => Neo4jConverter(args(1), outDir).convertFromZipFile()
         case x => println("unknown format: " + x + "\n"); println(usage)
       }
     }

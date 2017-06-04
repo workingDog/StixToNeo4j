@@ -1,4 +1,6 @@
-# this is for macosx
+#!/usr/bin/env bash
+#
+# this is for macos to import csv files
 #
 # see: http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/
 # for using the "normal" ../neo/bin/neo4j-import tool
