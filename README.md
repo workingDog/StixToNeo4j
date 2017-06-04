@@ -2,7 +2,7 @@
 
 This application **StixToNeo4j**, converts STIX-2.1 objects and relations from json and zip files into a csv Neo4j representation. 
 
-The Structured Threat Information Expression [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
+The [OASIS](https://www.oasis-open.org/) open standard, Structured Threat Information Expression [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
 is a language for expressing cyber threat and observable information.
 
 [Neo4j](https://neo4j.com/) "is a highly scalable native graph database that leverages data 
@@ -41,11 +41,15 @@ To assemble the application and all its dependencies into a single jar file type
 
 This will produce "stixtoneo4j-1.0.jar" in the "./target/scala-2.12" directory.
 
-For convenience a **"stixtoneo4j-1.0.jar"** file is in the "distrib" directory.
+For convenience a **"stixtoneo4j-1.0.jar"** file is in the "distrib" directory ready for use.
 
 ### Usage
 
-Once you have the jar file, simply type at the prompt:
+Creating a Neo4j graph database from a file of Stix objects requires two steps.
+First convert the Stix objects to Neo4j csv format using **StixToNeo4j**, 
+then import those csv files into Neo4j using **doimport.sh** script. 
+
+Converting the Stix objects to Neo4j csv format, simply type at the prompt:
  
     java -jar stixtoneo4j-1.0.jar --csv stix_file.json output_dir
     or
@@ -67,10 +71,12 @@ Note: on macOS, when using "Compress" from the "Finder" menu, the resulting zip 
 Once the Neo4j csv files are generated, use the **doimport.sh** script to bulk import the files into 
 a Neo4j graph database. 
  
+See [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/) for how to use and 
+customize the import tool for your OS.
  
 ### Status
 
-not ready do not use
+not ready 
 
 Using Scala 2.12, Java 8 and SBT-0.13.15.
 

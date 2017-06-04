@@ -69,11 +69,46 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   }
 
   /**
+    * For processing very large text files.
+    *
     * read Stix objects one by one from the input file and
     * convert them to neo4j csv format then
     * write the results to csv files in the output directory
+    *
+    * each Stix object is on one line separated by a new line "\n"
     */
   def convertFromStixFile(): Unit = {
+    // the file writer
+    neoWriter = new Neo4jFileWriter(outDir)
+    // create all the required csv files
+    neoWriter.init()
+    // write the headers into them
+    neoWriter.writeHeaders()
+    // read a STIX object from the inFile, one line at a time
+    for (line <- Source.fromFile(inFile).getLines) {
+      // create a Stix object from it and convert it
+      decode[StixObj](line) match {
+        case Left(failure) => println("\n-----> ERROR reading StixObj in file: " + inFile + " line: " + line)
+        case Right(stixObj) =>
+          stixObj match {
+            case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
+            case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
+            case stix => // do nothing for now
+          }
+      }
+    }
+    // all done, close all files
+    neoWriter.closeAll
+  }
+
+  /**
+    * For processing very large zip files.
+    *
+    * read Stix objects one by one from the input zip file and
+    * convert them to neo4j csv format then
+    * write the results to zip files in the output directory
+    */
+  def convertFromStixZipFile(): Unit = {
     // todo
   }
 
@@ -131,31 +166,31 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case AttackPattern.`type` =>
         val y = x.asInstanceOf[AttackPattern]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
         neoWriter.writeToFile(AttackPattern.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Identity.`type` =>
         val y = x.asInstanceOf[Identity]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.identity_class) + "," + toStringArray(y.sectors) + "," +
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.identity_class) + "," + toStringArray(y.sectors) + "," +
           clean(y.contact_information.getOrElse("")) + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Identity.`type`, line)
 
       case Campaign.`type` =>
         val y = x.asInstanceOf[Campaign]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.objective.getOrElse("")) + "," + toStringArray(y.aliases) + "," +
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.objective.getOrElse("")) + "," + toStringArray(y.aliases) + "," +
           clean(y.first_seen.getOrElse("").toString) + "," + clean(y.last_seen.getOrElse("").toString) + "," +
           clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Campaign.`type`, line)
 
       case CourseOfAction.`type` =>
         val y = x.asInstanceOf[CourseOfAction]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(CourseOfAction.`type`, line)
 
       case IntrusionSet.`type` =>
         val y = x.asInstanceOf[IntrusionSet]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," +
           toStringArray(y.aliases) + "," + y.first_seen.getOrElse("").toString + "," +
           y.last_seen.getOrElse("").toString + "," + toStringArray(y.goals) + "," +
           clean(y.resource_level.getOrElse("")) + "," +
@@ -166,20 +201,20 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case Malware.`type` =>
         val y = x.asInstanceOf[Malware]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," + kill_chain_phases_ids + "," + endPart
         neoWriter.writeToFile(Malware.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Report.`type` =>
         val y = x.asInstanceOf[Report]
         val object_refs_ids = toIdArray(y.object_refs)
-        val line = commonPart + "," + clean(y.name) + "," +y.published + "," + object_refs_ids + "," + clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," + y.published + "," + object_refs_ids + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Report.`type`, line)
         writeObjRefs(y.id.toString(), y.object_refs, object_refs_ids, NeoWriter.objectRefs)
 
       case ThreatActor.`type` =>
         val y = x.asInstanceOf[ThreatActor]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," +
           toStringArray(y.aliases) + "," + toStringArray(y.roles) + "," + toStringArray(y.goals) + "," +
           clean(y.sophistication.getOrElse("")) + "," + clean(y.resource_level.getOrElse("")) + "," +
           clean(y.primary_motivation.getOrElse("")) + "," + toStringArray(y.secondary_motivations) + "," +
@@ -189,14 +224,14 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       case Tool.`type` =>
         val y = x.asInstanceOf[Tool]
         val kill_chain_phases_ids = toIdArray(y.kill_chain_phases)
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," +
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," +
           kill_chain_phases_ids + "," + clean(y.tool_version.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Tool.`type`, line)
         writeKillPhases(y.id.toString(), y.kill_chain_phases, kill_chain_phases_ids)
 
       case Vulnerability.`type` =>
         val y = x.asInstanceOf[Vulnerability]
-        val line = commonPart + "," + clean(y.name) + "," +clean(y.description.getOrElse("")) + "," + endPart
+        val line = commonPart + "," + clean(y.name) + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Vulnerability.`type`, line)
 
       case Indicator.`type` =>
