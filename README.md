@@ -12,7 +12,7 @@ to meet today’s evolving data challenges."
 In essence, a graph database and processing engine that is used here for storing Stix objects 
 and their relationships.
  
-This application converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
+**StixToNeo4j** converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
 domain objects (SDO) and relationships (SRO) to [Neo4j](https://neo4j.com/) csv format ready for 
 bulk import into a Neo4j graph database. 
               
@@ -73,7 +73,7 @@ customize the import tool for your OS.
  
 ### Status
 
-not ready 
+not finished 
 
 Using Scala 2.12, Java 8 and SBT-0.13.15.
 

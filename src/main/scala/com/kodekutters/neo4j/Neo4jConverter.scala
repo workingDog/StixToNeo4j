@@ -65,7 +65,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     // create a bundle object from it and convert it
     decode[Bundle](jsondoc) match {
       case Left(failure) => println("\n-----> ERROR reading bundle in file: " + inFile)
-      case Right(bundle) => for (obj <- bundle.objects) convertObj(obj)
+      case Right(bundle) => bundle.objects.foreach(convertObj(_))
     }
     // all done, close all files
     neoWriter.closeAll
@@ -128,7 +128,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     // for each entry file
     rootZip.entries.asScala.filter(_.getName.toLowerCase.endsWith(".json")).foreach(f => {
       loadBundle(rootZip.getInputStream(f)) match {
-        case Some(bundle) => for (obj <- bundle.objects) convertObj(obj)
+        case Some(bundle) => bundle.objects.foreach(convertObj(_))
         case None => println("-----> ERROR invalid bundle JSON in zip file: \n")
       }
     })
