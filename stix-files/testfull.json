@@ -3,6 +3,37 @@
   "spec_version": "2.1",
   "id": "bundle--0fe33f18-9717-4329-9179-429d7304ef73",
   "objects": [
+
+    {
+      "type": "marking-definition",
+      "id": "marking-definition--34098fce-860f-48ae-8e50-ebd3cc5e41da",
+      "created": "2016-05-12T08:17:27.000Z",
+      "definition_type": "tlp",
+      "definition": {
+        "tlp": "green"
+      }
+    },
+
+    {
+      "type": "language-content",
+      "id": "language-content--b86bd89f-98bb-4fa9-8cb2-9ad421da981d",
+      "created": "2017-02-08T21:31:22.007Z",
+      "modified": "2017-02-08T21:31:22.007Z",
+      "object_ref": "campaign--12a111f0-b824-4baf-a224-83b80237a094",
+      "object_modified": "2017-02-08T21:31:22.007Z",
+      "contents":
+      {
+        "de": {
+          "name": "Bank Angriff 1",
+          "description": "Weitere Informationen über Banküberfall"
+        },
+        "fr": {
+          "name": "Attaque Bank 1",
+          "description": "Plus d'informations sur la crise bancaire"
+        }
+      }
+    }
+,
     {
       "type": "indicator",
       "id": "indicator--3tgverxfryjnujnu",
@@ -62,7 +93,7 @@
       "name": "The MITRE Corporation - DHS Support Team",
       "identity_class": "organization",
       "object_marking_refs": [
-        "marking-definition--34098fce-860f-48ae-8e50-ebd3cc5e41da"
+        "marking-definition--34098fcexxxxsxs41da"
       ]
     },
     {
@@ -283,7 +314,7 @@
     },
     {
       "type": "marking-definition",
-      "id": "marking-definition--34098fce-860f-48ae-8e50-ebd3cc5e41da",
+      "id": "marking-definition--340yuerfwed5e41da",
       "created": "2016-08-01T00:00:00.000Z",
       "definition_type": "statement",
       "definition": {
@@ -3424,7 +3455,7 @@
     },
     {
       "type": "marking-definition",
-      "id": "marking-definition--34098fce-860f-48ae-8e50-ebd3cc5e41da",
+      "id": "marking-definition--340wqsxwsxwxwa",
       "created": "2017-01-20T00:00:00.000Z",
       "definition_type": "tlp",
       "definition": {
@@ -3598,7 +3629,7 @@
     },
     {
       "type": "marking-definition",
-      "id": "marking-definition--f88d31f6-486f-44da-b317-01333bde0b82",
+      "id": "marking-definition--dfddfdffdfd82",
       "created": "2017-01-20T00:00:00.000Z",
       "definition_type": "tlp",
       "definition": {

@@ -38,6 +38,16 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   // for newly created relationships ids
   private def newId = UUID.randomUUID().toString
 
+  // convert a Stix object according to its type
+  private def convertObj(obj: StixObj) = {
+    obj match {
+      case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
+      case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
+      case stix if stix.isInstanceOf[StixObj] => convertStixObj(stix.asInstanceOf[StixObj])
+      case stix => // do nothing for now
+    }
+  }
+
   /**
     * read a bundle of Stix objects from the input file and
     * convert it to neo4j csv format then
@@ -55,14 +65,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     // create a bundle object from it and convert it
     decode[Bundle](jsondoc) match {
       case Left(failure) => println("\n-----> ERROR reading bundle in file: " + inFile)
-      case Right(bundle) =>
-        for (obj <- bundle.objects) {
-          obj match {
-            case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
-            case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
-            case stix => // do nothing for now
-          }
-        }
+      case Right(bundle) => for (obj <- bundle.objects) convertObj(obj)
     }
     // all done, close all files
     neoWriter.closeAll
@@ -89,12 +92,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       // create a Stix object from it and convert it
       decode[StixObj](line) match {
         case Left(failure) => println("\n-----> ERROR reading StixObj in file: " + inFile + " line: " + line)
-        case Right(stixObj) =>
-          stixObj match {
-            case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
-            case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
-            case stix => // do nothing for now
-          }
+        case Right(stixObj) => convertObj(stixObj)
       }
     }
     // all done, close all files
@@ -130,14 +128,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     // for each entry file
     rootZip.entries.asScala.filter(_.getName.toLowerCase.endsWith(".json")).foreach(f => {
       loadBundle(rootZip.getInputStream(f)) match {
-        case Some(bundle) =>
-          for (obj <- bundle.objects) {
-            obj match {
-              case stix if stix.isInstanceOf[SDO] => convertSDO(stix.asInstanceOf[SDO])
-              case stix if stix.isInstanceOf[SRO] => convertSRO(stix.asInstanceOf[SRO])
-              case stix => // do nothing for now
-            }
-          }
+        case Some(bundle) => for (obj <- bundle.objects) convertObj(obj)
         case None => println("-----> ERROR invalid bundle JSON in zip file: \n")
       }
     })
@@ -251,9 +242,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
           y.number_observed + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(ObservedData.`type`, line)
 
-      case MarkingDefinition.`type` => // todo
-
-      case LanguageContent.`type` => // todo
+      case _ => // do nothing for now
     }
   }
 
@@ -294,17 +283,70 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     }
   }
 
+  // convert MarkingDefinition and LanguageContent
+  def convertStixObj(stixObj: StixObj) = {
+
+    stixObj match {
+
+      case x: MarkingDefinition =>
+        val definition_id = newId
+        val granular_markings_ids = toIdArray(x.granular_markings)
+        val external_references_ids = toIdArray(x.external_references)
+        val object_marking_refs_arr = toStringIds(x.object_marking_refs)
+        val line = x.id.toString() + "," + x.`type` + "," + x.created.time + "," +
+          clean(x.definition_type) + "," + definition_id + "," +
+          external_references_ids + "," + object_marking_refs_arr + "," +
+          granular_markings_ids + "," + x.created_by_ref.getOrElse("") + ",SixObj" + ";" + asCleanLabel(x.`type`)
+        // write the external_references
+        writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
+        // write the granular_markings
+        writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
+        // write the marking object definition
+        writeMarkingObjRefs(x.id.toString(), x.definition, definition_id)
+        neoWriter.writeToFile(MarkingDefinition.`type`, line)
+
+      // todo <----- contents: Map[String, Map[String, String]]
+      case x: LanguageContent =>
+        val labelsString = toStringArray(x.labels)
+        val granular_markings_ids = toIdArray(x.granular_markings)
+        val external_references_ids = toIdArray(x.external_references)
+        val object_marking_refs_arr = toStringIds(x.object_marking_refs)
+        val line = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
+          x.object_modified + "," + x.object_ref.toString() + "," + labelsString + "," + x.revoked.getOrElse("") + ","
+        external_references_ids + "," + object_marking_refs_arr + "," +
+          granular_markings_ids + "," + x.created_by_ref.getOrElse("") + ",SixObj" + ";" + asCleanLabel(x.`type`)
+        // write the external_references
+        writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
+        // write the granular_markings
+        writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
+        neoWriter.writeToFile(LanguageContent.`type`, line)
+
+    }
+  }
+
   //--------------------------------------------------------------------------------------------
+
+  // write the marking object
+  def writeMarkingObjRefs(idString: String, definition: MarkingObject, definition_id: String) = {
+    val mark: String = definition match {
+      case s: StatementMarking => clean(s.statement) + ",statement"
+      case s: TPLMarking => clean(s.tlp.value) + ",tlp"
+      case _ => ""
+    }
+    neoWriter.writeToFile(NeoWriter.markingObjRefs, idString + "," + mark)
+    // write the markingObj relationships with the given id
+    neoWriter.writeToRelFile(NeoWriter.markingObjRefs, idString + "," + definition_id + ",HAS_MARKING_OBJECT")
+  }
 
   // write the kill_chain_phases
   def writeKillPhases(idString: String, kill_chain_phases: Option[List[KillChainPhase]], kill_chain_phases_ids: String) = {
     val killphases = for (s <- kill_chain_phases.getOrElse(List.empty))
-      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
+      yield clean(s.kill_chain_name) + "," + clean(s.phase_name) + "," + asCleanLabel(s.`type`)
     if (killphases.nonEmpty) {
       val kp = (kill_chain_phases_ids.split(";") zip killphases).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(KillChainPhase.`type`, kp.mkString("\n"))
       // write the kill_chain_phase relationships with the given ids
-      val krel = for (k <- kill_chain_phases_ids.split(";")) yield idString + "," + k + ",HAS"
+      val krel = for (k <- kill_chain_phases_ids.split(";")) yield idString + "," + k + ",HAS_KILL_CHAIN_PHASE"
       neoWriter.writeToRelFile(KillChainPhase.`type`, krel.mkString("\n"))
     }
   }
@@ -313,12 +355,12 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   def writeExternRefs(idString: String, external_references: Option[List[ExternalReference]], external_references_ids: String) = {
     val externRefs = for (s <- external_references.getOrElse(List.empty))
       yield clean(s.source_name) + "," + clean(s.description.getOrElse("")) + "," +
-        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
+        clean(s.url.getOrElse("")) + "," + clean(s.external_id.getOrElse("")) + "," + asCleanLabel(s.`type`)
     if (externRefs.nonEmpty) {
       val kp = (external_references_ids.split(";") zip externRefs).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(ExternalReference.`type`, kp.mkString("\n"))
       // write the external_reference relationships with the given ids
-      val krel = for (k <- external_references_ids.split(";")) yield idString + "," + k + ",HAS"
+      val krel = for (k <- external_references_ids.split(";")) yield idString + "," + k + ",HAS_EXTERNAL_REF"
       neoWriter.writeToRelFile(ExternalReference.`type`, krel.mkString("\n"))
     }
   }
@@ -327,12 +369,12 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   def writeGranulars(idString: String, granular_markings: Option[List[GranularMarking]], granular_markings_ids: String) = {
     val granulars = for (s <- granular_markings.getOrElse(List.empty))
       yield toStringArray(Option(s.selectors)) + "," + clean(s.marking_ref.getOrElse("")) + "," +
-        clean(s.lang.getOrElse("")) + "," + "SRO" + ";" + asCleanLabel(s.`type`)
+        clean(s.lang.getOrElse("")) + "," + asCleanLabel(s.`type`)
     if (granulars.nonEmpty) {
       val kp = (granular_markings_ids.split(";") zip granulars).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(GranularMarking.`type`, kp.mkString("\n"))
       // write the granular_markings relationships with the given ids
-      val krel = for (k <- granular_markings_ids.split(";")) yield idString + "," + k + ",HAS"
+      val krel = for (k <- granular_markings_ids.split(";")) yield idString + "," + k + ",HAS_GRANULAR_MARKING"
       neoWriter.writeToRelFile(GranularMarking.`type`, krel.mkString("\n"))
     }
   }
@@ -344,7 +386,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
       val kp = (object_refs_ids.split(";") zip objRefs).map({ case (a, b) => a + "," + b })
       neoWriter.writeToFile(typeName, kp.mkString("\n"))
       // write the object_refs relationships with the given ids
-      val krel = for (k <- object_refs_ids.split(";")) yield idString + "," + k + ",HAS"
+      val krel = for (k <- object_refs_ids.split(";")) yield idString + "," + k + ",HAS_" + typeName.toUpperCase
       neoWriter.writeToRelFile(typeName, krel.mkString("\n"))
     }
   }

@@ -22,16 +22,18 @@ object NeoWriter {
   val objectRefs = "object_refs"
   val observedDataRefs = "observed_data_refs"
   val whereSightedRefs = "where_sighted_refs"
+  val markingObjRefs = "marking_object_refs"
 
   // list of all relationship types
   val relationTypes = Seq(KillChainPhase.`type`, ExternalReference.`type`, GranularMarking.`type`,
-    objectRefs, observedDataRefs, whereSightedRefs, Sighting.`type`, Relationship.`type`)
+    objectRefs, observedDataRefs, whereSightedRefs, Sighting.`type`, Relationship.`type`,
+    markingObjRefs)
 
   // list of all node type names
   val nodeTypes = Seq(AttackPattern.`type`, Identity.`type`, Campaign.`type`,
     CourseOfAction.`type`, Indicator.`type`, IntrusionSet.`type`,
     Malware.`type`, ObservedData.`type`, Report.`type`, ThreatActor.`type`,
     Tool.`type`, Vulnerability.`type`, objectRefs, observedDataRefs, whereSightedRefs,
-    MarkingDefinition.`type`, LanguageContent.`type`, KillChainPhase.`type`,
+    MarkingDefinition.`type`, markingObjRefs, LanguageContent.`type`, KillChainPhase.`type`,
     ExternalReference.`type`, GranularMarking.`type`)
 }
