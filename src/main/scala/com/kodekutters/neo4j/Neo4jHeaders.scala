@@ -99,7 +99,7 @@ object Neo4jHeaders {
   val whereSightedRelHeader = ":START_ID(StixObj),:END_ID(where_sighted_ref_id),:TYPE"
   val relationshipsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,description," + commonRelHeader
   val sightingsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,first_seen,last_seen,count,summary:boolean,observed_data_ids:string[],where_sighted_refs_id:string[],description," + commonRelHeader
-  val markingObjRelHeader = ":START_ID(StixObj),:END_ID(marking_id),mark_type,:TYPE"
+  val markingObjRelHeader = ":START_ID(StixObj),:END_ID(marking_id),:TYPE"
 
   relHeaders ++= Map(
     KillChainPhase.`type` -> killChainPhaseRelHeader,

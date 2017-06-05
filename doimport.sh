@@ -9,6 +9,7 @@
 -cp /Applications/Neo4j\ Community\ Edition\ 3.2.0.app/Contents/Resources/app/bin/neo4j-desktop-3.2.0.jar org.neo4j.tooling.ImportTool \
 --into ./neo/data/graph.db \
 --id-type string \
+--nodes ./csv-files/marking_object_refs.csv \
 --nodes ./csv-files/granular-marking.csv \
 --nodes ./csv-files/external-reference.csv \
 --nodes ./csv-files/kill-chain-phase.csv \
@@ -36,4 +37,5 @@
 --relationships ./csv-files/relationship_rel.csv \
 --relationships ./csv-files/external-reference_rel.csv \
 --relationships ./csv-files/kill-chain-phase_rel.csv \
---relationships ./csv-files/object_refs_rel.csv
+--relationships ./csv-files/object_refs_rel.csv \
+--relationships ./csv-files/marking_object_refs_rel.csv
