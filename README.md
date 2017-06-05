@@ -1,8 +1,9 @@
 ## Convert STIX-2.1 to Neo4j csv file format 
 
-This application **StixToNeo4j**, converts STIX-2.1 objects and relations from json and zip files into a csv Neo4j representation. 
+This application **StixToNeo4j**, converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
+objects and relations from json and zip files into a csv [Neo4j](https://neo4j.com/)  representation. 
 
-The [OASIS](https://www.oasis-open.org/) open standard, Structured Threat Information Expression [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
+The [OASIS](https://www.oasis-open.org/) open standard Structured Threat Information Expression [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
 is a language for expressing cyber threat and observable information.
 
 [Neo4j](https://neo4j.com/) "is a highly scalable native graph database that leverages data 
@@ -11,8 +12,8 @@ to meet today’s evolving data challenges."
 In essence, a graph database and processing engine that is used here for storing Stix objects 
 and their relationships.
  
-This application uses the [ScalaStix](https://github.com/workingDog/scalastix) library
-to convert Stix domain objects (SDO) and relationships (SRO) to Neo4j csv format ready for 
+This application converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
+domain objects (SDO) and relationships (SRO) to [Neo4j](https://neo4j.com/) csv format ready for 
 bulk import into a Neo4j graph database. 
               
 ### References
@@ -25,12 +26,14 @@ bulk import into a Neo4j graph database.
 
 4) [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit)
 
-### Dependencies
+### Dependencies and requirements
 
 Depends on the scala [ScalaStix](https://github.com/workingDog/scalastix) library
 (included in the "lib" directory) and the **doimport.sh** script to import the csv files into Neo4j db.
 
-Java 8 is also required.
+Java 8 is required to run **StixToNeo4j**. 
+
+Neo4j is required to be installed to use the **doimport.sh** script.
 
 ### Installation and packaging
 
@@ -63,14 +66,8 @@ directory.
 If the input file is a zip file with one or more files containing bundles of Stix objects,
 the output file will also be a zip file with results.
  
-Note: on macOS, when using "Compress" from the "Finder" menu, the resulting zip file may contain 
-  extra "__MACOSX/" directories that should be removed by typing in a terminal:
-  
-      zip -d the_file_name.zip __MACOSX/\*
- 
-Once the Neo4j csv files are generated, use the **doimport.sh** script to bulk import the files into 
+Once the Neo4j csv files are generated, use the **doimport.sh** script (currently MacOS) to bulk import the files into 
 a Neo4j graph database. 
- 
 See [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/) for how to use and 
 customize the import tool for your OS.
  
