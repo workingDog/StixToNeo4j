@@ -12,7 +12,7 @@ import scala.io.Source
 import scala.language.implicitConversions
 import scala.language.postfixOps
 import com.kodekutters.neo4j.Neo4jZipReader._
-
+import scala.collection.JavaConverters._
 
 /**
   * converts Stix-2.1 objects and relationships into Neo4j csv format
@@ -30,12 +30,14 @@ object Neo4jConverter {
 /**
   * converts Stix-2.1 objects (nodes) and relationships (edges) into Neo4j csv format
   */
-class Neo4jConverter private(inFile: String, outDir: String) {
+class Neo4jConverter private(inFile: String, outD: String) {
+
+  private val outDir = if (outD.endsWith("/")) outD else outD + "/"
 
   // a writer for writing the results, either plain or zip
-  var neoWriter: NeoWriter = _
+  private var neoWriter: NeoWriter = _
 
-  // for newly created relationships ids
+  // generate a unique random id
   private def newId = UUID.randomUUID().toString
 
   // convert a Stix object according to its type
@@ -49,11 +51,11 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   }
 
   /**
-    * read a bundle of Stix objects from the input file and
-    * convert it to neo4j csv format then
+    * read a bundle of Stix objects from the input file,
+    * convert it to neo4j csv format and
     * write the results to csv files in the output directory
     */
-  def convertFromBundleFile(): Unit = {
+  def convertBundleFile(): Unit = {
     // the file writer
     neoWriter = new Neo4jFileWriter(outDir)
     // create all the required csv files
@@ -62,7 +64,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     neoWriter.writeHeaders()
     // read a STIX bundle from the inFile
     val jsondoc = Source.fromFile(inFile).mkString
-    // create a bundle object from it and convert it
+    // create a bundle object from it, convert and write it out
     decode[Bundle](jsondoc) match {
       case Left(failure) => println("\n-----> ERROR reading bundle in file: " + inFile)
       case Right(bundle) => bundle.objects.foreach(convertObj(_))
@@ -72,15 +74,46 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   }
 
   /**
+    * read Stix bundles from the input zip file,
+    * convert them to neo4j csv format and
+    * write the results to zip files in the output directory.
+    *
+    * The input zip file must contain one or more file entries with extension .json
+    * and with a single bundle in each.
+    *
+    */
+  def convertBundleZipFile(): Unit = {
+    // the zip file writer
+    neoWriter = new Neo4jZipWriter(outDir)
+    // create all the required csv zip files
+    neoWriter.init()
+    // write the headers into them
+    neoWriter.writeHeaders()
+    // get the input zip file
+    val rootZip = new java.util.zip.ZipFile(new File(inFile))
+    // for each entry file
+    rootZip.entries.asScala.filter(_.getName.toLowerCase.endsWith(".json")).foreach(f => {
+      // read a bundle from the file entry
+      loadBundle(rootZip.getInputStream(f)) match {
+        case Some(bundle) => bundle.objects.foreach(convertObj(_))
+        case None => println("-----> ERROR invalid bundle JSON in zip file: \n")
+      }
+    })
+    // all done, close all files
+    neoWriter.closeAll
+  }
+
+  /**
     * For processing very large text files.
     *
-    * read Stix objects one by one from the input file and
-    * convert them to neo4j csv format then
+    * read Stix objects one by one from the input file,
+    * convert them to neo4j csv format and
     * write the results to csv files in the output directory
     *
-    * each Stix object is on one line separated by a new line "\n"
+    * The input file must contain a Stix object on one line ending with a new line.
+    *
     */
-  def convertFromStixFile(): Unit = {
+  def convertStixFile(): Unit = {
     // the file writer
     neoWriter = new Neo4jFileWriter(outDir)
     // create all the required csv files
@@ -89,7 +122,7 @@ class Neo4jConverter private(inFile: String, outDir: String) {
     neoWriter.writeHeaders()
     // read a STIX object from the inFile, one line at a time
     for (line <- Source.fromFile(inFile).getLines) {
-      // create a Stix object from it and convert it
+      // create a Stix object from it, convert and write it out
       decode[StixObj](line) match {
         case Left(failure) => println("\n-----> ERROR reading StixObj in file: " + inFile + " line: " + line)
         case Right(stixObj) => convertObj(stixObj)
@@ -102,34 +135,36 @@ class Neo4jConverter private(inFile: String, outDir: String) {
   /**
     * For processing very large zip files.
     *
-    * read Stix objects one by one from the input zip file and
-    * convert them to neo4j csv format then
+    * read Stix objects one by one from the input zip file,
+    * convert them to neo4j csv format and
     * write the results to zip files in the output directory
+    *
+    * There can be one or more file entries in the zip file,
+    * each file must have the extension .json.
+    *
+    * Each entry file must have a Stix object on one line ending with a new line.
+    *
     */
-  def convertFromStixZipFile(): Unit = {
-    // todo
-  }
-
-  /**
-    * read Stix bundles from the input zip file and
-    * convert them to neo4j csv format then
-    * write the results to zip files in the output directory
-    */
-  def convertFromZipFile(): Unit = {
+  def convertStixZipFile(): Unit = {
     // the zip file writer
     neoWriter = new Neo4jZipWriter(outDir)
-    // create all the required csv files
+    // create all the required csv zip files
     neoWriter.init()
     // write the headers into them
     neoWriter.writeHeaders()
-    // get the zip file
-    import scala.collection.JavaConverters._
+    // get the input zip file
     val rootZip = new java.util.zip.ZipFile(new File(inFile))
     // for each entry file
     rootZip.entries.asScala.filter(_.getName.toLowerCase.endsWith(".json")).foreach(f => {
-      loadBundle(rootZip.getInputStream(f)) match {
-        case Some(bundle) => bundle.objects.foreach(convertObj(_))
-        case None => println("-----> ERROR invalid bundle JSON in zip file: \n")
+      // get the lines from the entry file
+      val inputLines = Source.fromInputStream(rootZip.getInputStream(f)).getLines
+      // read a Stix object from the inputLines, one line at a time
+      for (line <- inputLines) {
+        // create a Stix object from it, convert and write it out
+        decode[StixObj](line) match {
+          case Left(failure) => println("\n-----> ERROR reading StixObj in file: " + f.getName + " line: " + line)
+          case Right(stixObj) => convertObj(stixObj)
+        }
       }
     })
     // all done, close all files

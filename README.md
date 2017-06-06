@@ -12,10 +12,11 @@ to meet today’s evolving data challenges."
 In essence, a graph database and processing engine that is used here for storing Stix objects 
 and their relationships.
  
-**StixToNeo4j** converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
-domain objects (SDO) and relationships (SRO) to [Neo4j](https://neo4j.com/) csv format ready for 
-bulk import into a Neo4j graph database. 
-              
+The aim is to be able to store all Stix objects and their 
+relationships information into a Neo4j graph database. 
+**StixToNeo4j** converts STIX-2.1 domain objects (SDO) and relationships (SRO) to Neo4j csv format ready for 
+bulk import into a Neo4j graph database using the [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/). 
+           
 ### References
  
 1) [Neo4j](https://neo4j.com/)
@@ -58,22 +59,37 @@ Converting the Stix objects to Neo4j csv format, simply type at the prompt:
     or
     java -jar stixtoneo4j-1.0.jar --zip stix_file.zip output_dir
  
-where "--csv" determines the conversion format, "stix_file.json" is the Stix file containing a 
-bundle of Stix objects you want to convert, and "output_dir" is the destination output directory 
-with the new format results. If the output directory is absent, the output is directed to the current 
+With the **--csv** option the input file "stix_file.json" must contain a single 
+bundle of Stix objects you want to convert. The "output_dir" is the destination output directory 
+with the csv formatted results. If the output directory is absent, the output is directed to the current 
 directory.
  
-If the input file is a zip file with one or more files containing bundles of Stix objects,
-the output file will also be a zip file with results.
+With the **--zip** option the input file must be a zip file with one or more entry files 
+containing a single bundle of Stix objects in each. The output files in this case 
+will also be zip files with csv formatted results.
  
-Once the Neo4j csv files are generated, use the **doimport.sh** script (currently MacOS) to bulk import the files into 
+Once the Neo4j csv files are generated, use the **doimport.sh** script (see the provided macOS example) to bulk import the files into 
 a Neo4j graph database. 
 See [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/) for how to use and 
 customize the import tool for your OS.
+
+#### For very large files
+
+To process very large files use the following options:
+
+    java -jar stixtoneo4j-1.0.jar --csvx stix_file.json output_dir
+    or
+    java -jar stixtoneo4j-1.0.jar --zipx stix_file.zip output_dir
+
+With the **--csvx** option the input file format must contain a Stix object on one line 
+ending with a new line. Similarly when using the **--zipx** option, each input zip file entries must 
+contain a Stix object on one line ending with a new line. When using these options 
+the processing is done one line at a time.
+ 
  
 ### Status
 
-not finished 
+not finished, not tested
 
 Using Scala 2.12, Java 8 and SBT-0.13.15.
 
