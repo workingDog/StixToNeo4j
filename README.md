@@ -17,6 +17,8 @@ relationships information into a Neo4j graph database.
 **StixToNeo4j** converts STIX-2.1 domain objects (SDO) and relationships (SRO) to Neo4j csv format ready for 
 bulk import into a Neo4j graph database using the [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/). 
            
+Note that the Neo4j import tool is for the initial setup of a database, not for adding new nodes and relations to an existing database.           
+           
 ### References
  
 1) [Neo4j](https://neo4j.com/)
@@ -51,9 +53,9 @@ For convenience a **"stixtoneo4j-1.0.jar"** file is in the "distrib" directory r
 
 Creating a Neo4j graph database from a file of Stix objects requires two steps.
 First convert the Stix objects to Neo4j csv format using **StixToNeo4j**, 
-then import those csv files into Neo4j using **doimport.sh** script. 
+then import those csv files into Neo4j using the **doimport.sh** script. 
 
-Converting the Stix objects to Neo4j csv format, simply type at the prompt:
+Converting the Stix objects to Neo4j csv format, simply type:
  
     java -jar stixtoneo4j-1.0.jar --csv stix_file.json output_dir
     or
@@ -81,7 +83,7 @@ To process very large files use the following options:
     or
     java -jar stixtoneo4j-1.0.jar --zipx stix_file.zip output_dir
 
-With the **--csvx** option the input file format must contain a Stix object on one line 
+With the **--csvx** option the input file must contain a Stix object on one line 
 ending with a new line. Similarly when using the **--zipx** option, each input zip file entries must 
 contain a Stix object on one line ending with a new line. When using these options 
 the processing is done one line at a time.
