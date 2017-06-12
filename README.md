@@ -36,7 +36,7 @@ Depends on the scala [ScalaStix](https://github.com/workingDog/scalastix) librar
 
 Java 8 is required to run **StixToNeo4j**. 
 
-Neo4j is required to be installed to use the **doimport.sh** script.
+Neo4j-3.2.1 is required to be installed to use the **doimport.sh** script.
 
 ### Installation and packaging
 

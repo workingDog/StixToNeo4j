@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# this is for macOS to import csv files into an installed Neo4j-3.2.0 database.
+# this is for macOS to import csv files into an installed Neo4j-3.2.1 database.
 #
 # see: http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/
 # for using and customizing the neo4j-import tool for your OS.
 
-/Applications/Neo4j\ Community\ Edition\ 3.2.0.app/Contents/Resources/jre.bundle/Contents/Home/jre/bin/java \
--cp /Applications/Neo4j\ Community\ Edition\ 3.2.0.app/Contents/Resources/app/bin/neo4j-desktop-3.2.0.jar org.neo4j.tooling.ImportTool \
+/Applications/Neo4j\ Community\ Edition\ 3.2.1.app/Contents/Resources/jre.bundle/Contents/Home/jre/bin/java \
+-cp /Applications/Neo4j\ Community\ Edition\ 3.2.1.app/Contents/Resources/app/bin/neo4j-desktop-3.2.1.jar org.neo4j.tooling.ImportTool \
 --into ./neo/data/graph.db \
 --id-type string \
 --nodes ./csv-files/marking_object_refs.csv \

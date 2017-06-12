@@ -9,7 +9,6 @@ scalaVersion := "2.12.2"
 crossScalaVersions := Seq("2.12.2")
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.6"
 //  "com.github.workingDog" %% "scalastix" % "1.0"
 )
 
