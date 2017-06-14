@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 /**
   * writing to plain csv files
+  *
   * @param outDir the output directory to write to
   */
 class Neo4jFileWriter(outDir: String) extends NeoWriter {
@@ -22,11 +23,19 @@ class Neo4jFileWriter(outDir: String) extends NeoWriter {
   def init(): Unit = {
     // create a file and a writer for it, for each type in nodeTypes and use the type as the file name
     nodeWriters ++= (for (p <- NeoWriter.nodeTypes)
-      yield p -> new PrintWriter(new File(outDir + p + ".csv"))).toMap[String, PrintWriter]
+      yield {
+        val file = new File(outDir + p + ".csv")
+        file.getParentFile.mkdirs
+        p -> new PrintWriter(file)
+      }).toMap[String, PrintWriter]
 
     // create a file and a writer for it, for each relations in relationTypes and use the type_rel as the file name
     relWriters ++= (for (p <- NeoWriter.relationTypes)
-      yield p -> new PrintWriter(new File(outDir + p + "_rel.csv"))).toMap[String, PrintWriter]
+      yield {
+        val file = new File(outDir + p + "_rel.csv")
+        file.getParentFile.mkdirs
+        p -> new PrintWriter(file)
+      }).toMap[String, PrintWriter]
 
   }
 

@@ -186,8 +186,10 @@ class Neo4jConverter private(inFile: String, outD: String) {
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
     writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
+    // write the created-by relation
+    writeCreatedBy(x.id.toString(), x.created_by_ref)
 
-    x.`type` match {
+      x.`type` match {
 
       case AttackPattern.`type` =>
         val y = x.asInstanceOf[AttackPattern]
@@ -296,6 +298,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
     writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
     // write the granular_markings
     writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
+    // write the created-by relation
+    writeCreatedBy(x.id.toString(), x.created_by_ref)
 
     if (x.isInstanceOf[Relationship]) {
       val y = x.asInstanceOf[Relationship]
@@ -338,6 +342,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
         writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
         // write the marking object definition
         writeMarkingObjRefs(x.id.toString(), x.definition, definition_id)
+        // write the created-by relation
+        writeCreatedBy(x.id.toString(), x.created_by_ref)
         neoWriter.writeToFile(MarkingDefinition.`type`, line)
 
       // todo <----- contents: Map[String, Map[String, String]]
@@ -354,6 +360,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
         writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
         // write the granular_markings
         writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
+        // write the created-by relation
+        writeCreatedBy(x.id.toString(), x.created_by_ref)
         neoWriter.writeToFile(LanguageContent.`type`, line)
 
     }
@@ -426,8 +434,12 @@ class Neo4jConverter private(inFile: String, outD: String) {
     }
   }
 
+  // write the created-by relation between idString and the Identifier
+  def writeCreatedBy(idString: String, tgtOpt: Option[Identifier]) = {
+    tgtOpt.map(tgt => neoWriter.writeToRelFile(NeoWriter.createdByRefs, idString + "," + tgt.toString() + ",CREATED_BY"))
+  }
+
   // clean the string, i.e. replace all unwanted char
-  // todo not replace but escape the unwanted char
   private def clean(s: String) = s.replace(",", " ").replace(";", " ").replace("\"", "").replace("\\", "").replace("\n", "").replace("\r", "")
 
   // make an array of id values from the input list

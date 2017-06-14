@@ -100,6 +100,7 @@ object Neo4jHeaders {
   val relationshipsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,description," + commonRelHeader
   val sightingsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,first_seen,last_seen,count,summary:boolean,observed_data_ids:string[],where_sighted_refs_id:string[],description," + commonRelHeader
   val markingObjRelHeader = ":START_ID(StixObj),:END_ID(marking_id),:TYPE"
+  val createdByRelHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE"
 
   relHeaders ++= Map(
     KillChainPhase.`type` -> killChainPhaseRelHeader,
@@ -110,7 +111,8 @@ object Neo4jHeaders {
     GranularMarking.`type` -> granularMarkingRelHeader,
     Relationship.`type` -> relationshipsHeader,
     Sighting.`type` -> sightingsHeader,
-    NeoWriter.markingObjRefs -> markingObjRelHeader
+    NeoWriter.markingObjRefs -> markingObjRelHeader,
+    NeoWriter.createdByRefs -> createdByRelHeader
   )
 
 }
