@@ -189,7 +189,7 @@ class Neo4jConverter private(inFile: String, outD: String) {
     // write the created-by relation
     writeCreatedBy(x.id.toString(), x.created_by_ref)
 
-      x.`type` match {
+    x.`type` match {
 
       case AttackPattern.`type` =>
         val y = x.asInstanceOf[AttackPattern]
@@ -307,7 +307,7 @@ class Neo4jConverter private(inFile: String, outD: String) {
     if (x.isInstanceOf[Relationship]) {
       val y = x.asInstanceOf[Relationship]
       // the SRO node
-      val lineNode =  x.id.toString() + "," + x.`type` + ","  + "SRO;RelationshipNode"
+      val lineNode = x.id.toString() + "," + x.`type` + "," + "SRO;RelationshipNode"
       neoWriter.writeToFile(NeoWriter.relationshipNode, lineNode)
       // the relation
       val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + asCleanLabel(y.relationship_type) + "," +
@@ -317,7 +317,7 @@ class Neo4jConverter private(inFile: String, outD: String) {
     else { // must be a Sighting todo ----> target_ref  observed_data_refs heading
       val y = x.asInstanceOf[Sighting]
       // the SRO node
-      val lineNode =  x.id.toString() + "," + x.`type` + ","  + "SRO;SightingNode"
+      val lineNode = x.id.toString() + "," + x.`type` + "," + "SRO;SightingNode"
       neoWriter.writeToFile(NeoWriter.sightingNode, lineNode)
       val observed_data_ids = toIdArray(y.observed_data_refs)
       val where_sighted_refs_ids = toIdArray(y.where_sighted_refs)
@@ -363,8 +363,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
         val granular_markings_ids = toIdArray(x.granular_markings)
         val external_references_ids = toIdArray(x.external_references)
         val line = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
-          x.object_modified + "," + x.object_ref.toString() + "," + toStringArray(x.labels) + "," + x.revoked.getOrElse("") + ","
-        external_references_ids + "," + toStringIds(x.object_marking_refs) + "," +
+          x.object_modified + "," + x.object_ref.toString() + "," + toStringArray(x.labels) + "," + x.revoked.getOrElse("") + "," +
+          external_references_ids + "," + toStringIds(x.object_marking_refs) + "," +
           granular_markings_ids + "," + x.created_by_ref.getOrElse("") + ",SixObj" + ";" + asCleanLabel(x.`type`)
         // write the external_references
         writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
