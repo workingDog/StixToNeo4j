@@ -57,7 +57,10 @@ object Neo4jHeaders {
 
   val markingObjRefHeader = "marking_id:ID(marking_id),marking" + endHeader
 
-  val langContent = "id:ID(StixObj),type,created,modified,object_modified,object_ref,labels:string[],revoked:boolean,external_references:string[],object_marking_refs:string[],granular_markings:string[],created_by_ref" + endHeader
+  val langContentHeader = "id:ID(StixObj),type,created,modified,object_modified,object_ref,labels:string[],revoked:boolean,external_references:string[],object_marking_refs:string[],granular_markings:string[],created_by_ref" + endHeader
+
+  // for Relationship and Sighting
+  val relationNodeHeader = "id:ID(StixObj),type" + endHeader
 
   // todo
   val observedDataHeader = commonNodeHeader + ",first_observed,last_observed,number_observed:int,description" + endHeader
@@ -82,10 +85,12 @@ object Neo4jHeaders {
     Vulnerability.`type` -> vulnerabilityHeader,
     ObservedData.`type` -> observedDataHeader,
     Report.`type` -> reportHeader,
-    LanguageContent.`type` -> langContent,
+    LanguageContent.`type` -> langContentHeader,
     MarkingDefinition.`type` -> markingDef,
     NeoWriter.observedDataRefs -> obDataRefDef,
-    NeoWriter.markingObjRefs -> markingObjRefHeader
+    NeoWriter.markingObjRefs -> markingObjRefHeader,
+    NeoWriter.relationshipNode -> relationNodeHeader,
+    NeoWriter.sightingNode -> relationNodeHeader
   )
 
   //---------------------------------------------------------------------
@@ -96,11 +101,12 @@ object Neo4jHeaders {
   val externalReferenceRelHeader = ":START_ID(StixObj),:END_ID(external_reference_id),:TYPE"
   val granularMarkingRelHeader = ":START_ID(StixObj),:END_ID(granular_marking_id),:TYPE"
   val objectRefRelHeader = ":START_ID(StixObj),:END_ID(object_ref_id),:TYPE"
-  val whereSightedRelHeader = ":START_ID(StixObj),:END_ID(where_sighted_ref_id),:TYPE"
+  val whereSightedRelHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE"
   val relationshipsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,description," + commonRelHeader
   val sightingsHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE,first_seen,last_seen,count,summary:boolean,observed_data_ids:string[],where_sighted_refs_id:string[],description," + commonRelHeader
   val markingObjRelHeader = ":START_ID(StixObj),:END_ID(marking_id),:TYPE"
   val createdByRelHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE"
+  val sightingObservedDataRelHeader = ":START_ID(StixObj),:END_ID(StixObj),:TYPE"
 
   relHeaders ++= Map(
     KillChainPhase.`type` -> killChainPhaseRelHeader,

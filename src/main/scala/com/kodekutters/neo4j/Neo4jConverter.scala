@@ -239,6 +239,7 @@ class Neo4jConverter private(inFile: String, outD: String) {
         val line = commonPart + "," + clean(y.name) + "," + y.published + "," + object_refs_ids + "," + clean(y.description.getOrElse("")) + "," + endPart
         neoWriter.writeToFile(Report.`type`, line)
         writeObjRefs(y.id.toString(), y.object_refs, object_refs_ids, NeoWriter.objectRefs)
+        writeObjRefRel(y.id.toString(), y.object_marking_refs, NeoWriter.markingObjRefs)
 
       case ThreatActor.`type` =>
         val y = x.asInstanceOf[ThreatActor]
@@ -300,15 +301,24 @@ class Neo4jConverter private(inFile: String, outD: String) {
     writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
     // write the created-by relation
     writeCreatedBy(x.id.toString(), x.created_by_ref)
+    // write the marking refs relations
+    writeObjRefRel(x.id.toString(), x.object_marking_refs, NeoWriter.markingObjRefs)
 
     if (x.isInstanceOf[Relationship]) {
       val y = x.asInstanceOf[Relationship]
+      // the SRO node
+      val lineNode =  x.id.toString() + "," + x.`type` + ","  + "SRO;RelationshipNode"
+      neoWriter.writeToFile(NeoWriter.relationshipNode, lineNode)
+      // the relation
       val line = y.source_ref.toString + "," + y.target_ref.toString() + "," + asCleanLabel(y.relationship_type) + "," +
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Relationship.`type`, line)
     }
     else { // must be a Sighting todo ----> target_ref  observed_data_refs heading
       val y = x.asInstanceOf[Sighting]
+      // the SRO node
+      val lineNode =  x.id.toString() + "," + x.`type` + ","  + "SRO;SightingNode"
+      neoWriter.writeToFile(NeoWriter.sightingNode, lineNode)
       val observed_data_ids = toIdArray(y.observed_data_refs)
       val where_sighted_refs_ids = toIdArray(y.where_sighted_refs)
       val line = y.sighting_of_ref.toString + "," + y.sighting_of_ref.toString + "," + "sighting" + "," +
@@ -317,8 +327,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
         observed_data_ids + "," + where_sighted_refs_ids + "," +
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Sighting.`type`, line)
-      writeObjRefs(y.id.toString(), y.observed_data_refs, observed_data_ids, NeoWriter.observedDataRefs)
-      writeObjRefs(y.id.toString(), y.where_sighted_refs, where_sighted_refs_ids, NeoWriter.whereSightedRefs)
+      writeObjRefRel(y.id.toString(), y.observed_data_refs, NeoWriter.observedDataRefs)
+      writeObjRefRel(y.id.toString(), y.where_sighted_refs, NeoWriter.whereSightedRefs)
     }
   }
 
@@ -344,17 +354,17 @@ class Neo4jConverter private(inFile: String, outD: String) {
         writeMarkingObjRefs(x.id.toString(), x.definition, definition_id)
         // write the created-by relation
         writeCreatedBy(x.id.toString(), x.created_by_ref)
+        // write the marking refs
+        writeObjRefRel(x.id.toString(), x.object_marking_refs, NeoWriter.markingObjRefs)
         neoWriter.writeToFile(MarkingDefinition.`type`, line)
 
       // todo <----- contents: Map[String, Map[String, String]]
       case x: LanguageContent =>
-        val labelsString = toStringArray(x.labels)
         val granular_markings_ids = toIdArray(x.granular_markings)
         val external_references_ids = toIdArray(x.external_references)
-        val object_marking_refs_arr = toStringIds(x.object_marking_refs)
         val line = x.id.toString() + "," + x.`type` + "," + x.created.time + "," + x.modified.time + "," +
-          x.object_modified + "," + x.object_ref.toString() + "," + labelsString + "," + x.revoked.getOrElse("") + ","
-        external_references_ids + "," + object_marking_refs_arr + "," +
+          x.object_modified + "," + x.object_ref.toString() + "," + toStringArray(x.labels) + "," + x.revoked.getOrElse("") + ","
+        external_references_ids + "," + toStringIds(x.object_marking_refs) + "," +
           granular_markings_ids + "," + x.created_by_ref.getOrElse("") + ",SixObj" + ";" + asCleanLabel(x.`type`)
         // write the external_references
         writeExternRefs(x.id.toString(), x.external_references, external_references_ids)
@@ -362,6 +372,8 @@ class Neo4jConverter private(inFile: String, outD: String) {
         writeGranulars(x.id.toString(), x.granular_markings, granular_markings_ids)
         // write the created-by relation
         writeCreatedBy(x.id.toString(), x.created_by_ref)
+        // write the marking refs
+        writeObjRefRel(x.id.toString(), x.object_marking_refs, NeoWriter.markingObjRefs)
         neoWriter.writeToFile(LanguageContent.`type`, line)
 
     }
@@ -431,6 +443,17 @@ class Neo4jConverter private(inFile: String, outD: String) {
       // write the object_refs relationships with the given ids
       val krel = for (k <- object_refs_ids.split(";")) yield idString + "," + k + ",HAS_" + typeName.toUpperCase
       neoWriter.writeToRelFile(typeName, krel.mkString("\n"))
+    }
+  }
+
+  // write the object_refs
+  def writeObjRefRel(idString: String, object_refs: Option[List[Identifier]], typeName: String) = {
+    if (object_refs.isDefined) {
+      // write the object_refs relationships with the given ids
+      for (s <- object_refs.getOrElse(List.empty)) {
+        val rel = idString + "," + clean(s.toString()) + ",HAS_" + typeName.toUpperCase
+        neoWriter.writeToRelFile(typeName, rel)
+      }
     }
   }
 

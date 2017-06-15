@@ -30,6 +30,9 @@
 --nodes ./csv-files/threat-actor.csv \
 --nodes ./csv-files/tool.csv \
 --nodes ./csv-files/vulnerability.csv \
+--nodes ./csv-files/sightingNode.csv \
+--nodes ./csv-files/relationshipNode.csv \
+--nodes ./csv-files/where_sighted_refs.csv \
 --relationships ./csv-files/granular-marking_rel.csv \
 --relationships ./csv-files/where_sighted_refs_rel.csv \
 --relationships ./csv-files/sighting_rel.csv \
@@ -38,4 +41,6 @@
 --relationships ./csv-files/external-reference_rel.csv \
 --relationships ./csv-files/kill-chain-phase_rel.csv \
 --relationships ./csv-files/object_refs_rel.csv \
---relationships ./csv-files/marking_object_refs_rel.csv
+--relationships ./csv-files/marking_object_refs_rel.csv \
+--relationships ./csv-files/sighting_rel.csv \
+--relationships ./csv-files/where_sighted_refs_rel.csv

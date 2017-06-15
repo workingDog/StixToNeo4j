@@ -91,7 +91,7 @@ the processing is done one line at a time.
  
 ### Status
 
-not finished, not tested
+not finished, not tested, not ready
 
 Using Scala 2.12, Java 8 and SBT-0.13.15.
 
