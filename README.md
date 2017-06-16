@@ -18,7 +18,8 @@ relationships information into a Neo4j graph database.
 bulk import into a Neo4j graph database using the [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/). 
            
 Note that the Neo4j import tool is for the initial setup of a database, not for adding new nodes and relations to an existing database.           
-           
+
+### Another tool            
 A better tool in this repo that provides for the creation and update of existing databases is [StixToNeoDB](https://github.com/workingDog/StixToNeoDB).
           
 ### References
