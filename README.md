@@ -19,12 +19,8 @@ bulk import into a Neo4j graph database using the [Neo4j import-tool](http://neo
            
 Note that the Neo4j import tool is for the initial setup of a database, not for adding new nodes and relations to an existing database.           
            
-Similar tools in this repo providing for the creation and update of existing databases are: 
-
-1) [StixToNeoDB](https://github.com/workingDog/StixToNeoDB) using Neo4j Java API
-
-2) [StixNeoLoader](https://github.com/workingDog/StixNeoLoader) using Neo4j Cypher statements execution         
-           
+A better tool in this repo that provides for the creation and update of existing databases is [StixToNeoDB](https://github.com/workingDog/StixToNeoDB).
+          
 ### References
  
 1) [Neo4j](https://neo4j.com/)
