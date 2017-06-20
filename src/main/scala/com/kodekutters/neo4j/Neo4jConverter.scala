@@ -328,7 +328,7 @@ class Neo4jConverter private(inFile: String, outD: String) {
         clean(y.description.getOrElse("")) + "," + commonPart
       neoWriter.writeToRelFile(Sighting.`type`, line)
       writeObjRefRel(y.id.toString(), y.observed_data_refs, NeoWriter.observedDataRefs)
-      writeObjRefRel(y.id.toString(), y.where_sighted_refs, NeoWriter.whereSightedRefs)
+      writeObjRefRel(y.sighting_of_ref.toString, y.where_sighted_refs, NeoWriter.whereSightedRefs)
     }
   }
 
