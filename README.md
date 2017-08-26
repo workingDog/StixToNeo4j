@@ -1,5 +1,9 @@
 ## Convert STIX-2.1 to Neo4j csv file format 
 
+
+### No longer maintained, see [StixToNeoDB](https://github.com/workingDog/StixToNeoDB) instead.
+
+
 This application **StixToNeo4j**, converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
 objects and relations from json and zip files into a csv [Neo4j](https://neo4j.com/)  representation. 
 
@@ -18,9 +22,6 @@ relationships information into a Neo4j graph database.
 bulk import into a Neo4j graph database using the [Neo4j import-tool](http://neo4j.com/docs/operations-manual/3.2/tutorial/import-tool/). 
            
 Note that the Neo4j import tool is for the initial setup of a database, not for adding new nodes and relations to an existing database.           
-
-### Another tool            
-A better tool in this repo that provides for the creation and update of existing databases is [StixToNeoDB](https://github.com/workingDog/StixToNeoDB).
           
 ### References
  
@@ -94,7 +95,7 @@ the processing is done one line at a time.
  
 ### Status
 
-not finished, not tested, not ready
+never finished, use [StixToNeoDB](https://github.com/workingDog/StixToNeoDB) instead.
 
 Using Scala 2.12, Java 8 and SBT-0.13.15.
 
