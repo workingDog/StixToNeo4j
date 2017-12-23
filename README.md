@@ -1,7 +1,7 @@
 ## Convert STIX-2.1 to Neo4j csv file format 
 
 
-### No longer maintained, see [StixToNeoDB](https://github.com/workingDog/StixToNeoDB) instead.
+### No longer maintained, see [StixToNeoDB](https://github.com/workingDog/StixToNeoDB) or [StixLoader](https://github.com/workingDog/stixloader) instead.
 
 
 This application **StixToNeo4j**, converts [STIX-2.1](https://docs.google.com/document/d/1yvqWaPPnPW-2NiVCLqzRszcx91ffMowfT5MmE9Nsy_w/edit#) 
